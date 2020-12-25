@@ -24,7 +24,8 @@ public class BasicClientService implements ClientService{
     public Client authenticate(String login, String password) {
         LOGGER.info("Started Basic auth checking");
         if (!loginExist(login)) {
-            throw new RuntimeException("login not exists");
+            LOGGER.info("login not exists, so returning null");
+            return null;
         }
         Client client = findByLogin(login);
         if (BCrypt.checkpw(password, client.getPassword())) {
@@ -46,7 +47,8 @@ public class BasicClientService implements ClientService{
     public Client authenticate(String token) {
         LOGGER.info("Started Basic token checking");
         if (!tokenExist(token)) {
-            throw new RuntimeException("token not exists");
+            LOGGER.info("token not exists, so returning null");
+            return null;
         }
         Client client = findByToken(token);
         if (LocalDate.now().isBefore(client.getDestructionTime())) {
@@ -54,6 +56,12 @@ public class BasicClientService implements ClientService{
             return client;
         }
         else {
+            client.setToken(null);
+            try {
+                dao().update(client);
+            } catch (SQLException throwables) {
+                throwables.printStackTrace();
+            }
             LOGGER.info("Check failed, please update token date");
             return null;
         }

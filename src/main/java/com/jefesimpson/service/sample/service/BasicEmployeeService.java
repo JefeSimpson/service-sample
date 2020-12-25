@@ -23,7 +23,8 @@ public class BasicEmployeeService implements EmployeeService {
     public Employee authenticate(String login, String password) {
         LOGGER.info("Started checking");
         if (!loginExist(login)) {
-            throw new RuntimeException("login not exists");
+            LOGGER.info("login not exists, so throwing null");
+            return null;
         }
         Employee employee = findByLogin(login);
         if (BCrypt.checkpw(password, employee.getPassword())) {
@@ -45,7 +46,8 @@ public class BasicEmployeeService implements EmployeeService {
     public Employee authenticate(String token) {
         LOGGER.info("Started checking");
         if (!tokenExist(token)) {
-            throw new RuntimeException("token not exists");
+            LOGGER.info("token not exists, so returning null");
+            return null;
         }
         Employee employee = findByToken(token);
         if (LocalDate.now().isBefore(employee.getDestructionTime())) {
@@ -53,6 +55,12 @@ public class BasicEmployeeService implements EmployeeService {
             return employee;
         }
         else {
+            employee.setToken(null);
+            try {
+                dao().update(employee);
+            } catch (SQLException throwables) {
+                throwables.printStackTrace();
+            }
             LOGGER.info("Check failed, please update token date");
             return null;
         }

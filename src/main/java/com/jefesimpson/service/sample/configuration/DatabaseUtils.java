@@ -13,7 +13,7 @@ public class DatabaseUtils {
 
     static{
         try {
-            connectionSource = new JdbcConnectionSource(Constants.COMPUTER_DB_PATH);
+            connectionSource = new JdbcConnectionSource(Constants.DB_PATH);
 
             TableUtils.createTableIfNotExists(connectionSource, Client.class);
             TableUtils.createTableIfNotExists(connectionSource, Employee.class);

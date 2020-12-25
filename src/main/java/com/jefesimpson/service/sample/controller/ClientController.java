@@ -15,6 +15,7 @@ import dev.samstevens.totp.secret.SecretGenerator;
 import io.javalin.http.*;
 
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -146,10 +147,14 @@ public class ClientController implements AuthorizationController<Client> {
                     context.result(mapperFactory.objectMapper(ModelPermission.UPDATE).writeValueAsString(target));
 
                     Client updated = mapperFactory.patchObjectMapper(ModelPermission.UPDATE).readValue(context.body(), Client.class);
-                    if (updated.getDestructionTime() != null) {
-                        SecretGenerator secretGenerator = new DefaultSecretGenerator();
-                        String secret = secretGenerator.generate();
-                        updated.setToken(secret);
+                    if (updated.getDestructionTime() != null && updated.getToken() == null) {
+                        if (LocalDate.now().isBefore(updated.getDestructionTime())) {
+                            SecretGenerator secretGenerator = new DefaultSecretGenerator();
+                            String secret = secretGenerator.generate();
+                            updated.setToken(secret);
+                        } else {
+                            updated.setToken(null);
+                        }
                     }
                     updated.setId(id);
                     clientService.update(updated);
@@ -169,7 +174,16 @@ public class ClientController implements AuthorizationController<Client> {
                     if (clientService.permissionsFor(client, target).contains(ModelPermission.UPDATE)) {
                         context.result(mapperFactory.objectMapper(ModelPermission.UPDATE).writeValueAsString(target));
 
-                        Client updated = mapperFactory.objectMapper(ModelPermission.UPDATE).readValue(context.body(), Client.class);
+                        Client updated = mapperFactory.patchObjectMapper(ModelPermission.UPDATE).readValue(context.body(), Client.class);
+                        if (updated.getDestructionTime() != null && updated.getToken() == null) {
+                            if (LocalDate.now().isBefore(updated.getDestructionTime())) {
+                                SecretGenerator secretGenerator = new DefaultSecretGenerator();
+                                String secret = secretGenerator.generate();
+                                updated.setToken(secret);
+                            } else {
+                                updated.setToken(null);
+                            }
+                        }
                         updated.setId(id);
                         clientService.update(updated);
                         LOGGER.info(String.format("Sender {%s} successfully updated client {%s} ", client, target));

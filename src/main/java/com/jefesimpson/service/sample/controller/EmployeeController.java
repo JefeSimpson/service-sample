@@ -17,6 +17,7 @@ import io.javalin.http.ForbiddenResponse;
 import io.javalin.http.InternalServerErrorResponse;
 
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -108,10 +109,14 @@ public class EmployeeController implements AuthorizationController<Employee>{
                 context.result(mapperFactory.objectMapper(ModelPermission.UPDATE).writeValueAsString(target));
 
                 Employee updated = mapperFactory.patchObjectMapper(ModelPermission.UPDATE).readValue(context.body(), Employee.class);
-                if (updated.getDestructionTime() != null) {
-                    SecretGenerator secretGenerator = new DefaultSecretGenerator();
-                    String secret = secretGenerator.generate();
-                    updated.setToken(secret);
+                if (updated.getDestructionTime() != null && updated.getToken() == null) {
+                    if (LocalDate.now().isBefore(updated.getDestructionTime())) {
+                        SecretGenerator secretGenerator = new DefaultSecretGenerator();
+                        String secret = secretGenerator.generate();
+                        updated.setToken(secret);
+                    } else {
+                        updated.setToken(null);
+                    }
                 }
                 updated.setId(id);
                 employeeService.update(updated);
